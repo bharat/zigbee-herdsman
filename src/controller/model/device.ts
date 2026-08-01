@@ -886,6 +886,17 @@ export class Device extends Entity<ControllerEventMap> {
             return true;
         }
 
+        // Control4 in-wall devices (manufacturerID 0xabcd) do not support genBasic reads at all, so the
+        // interview always fails before a modelID is known. The node descriptor already identifies them
+        // unambiguously, and their proprietary c4.dmx text protocol handles identification beyond this.
+        if (this._manufacturerID === 0xabcd) {
+            this.#genBasic.manufacturerName = this.#genBasic.manufacturerName || "Control4";
+            this.#genBasic.modelId = this.#genBasic.modelId || "C4-Zigbee";
+            this.#genBasic.powerSource = this.#genBasic.powerSource ?? Zcl.PowerSource["Mains (single phase)"];
+            logger.debug("Interview - quirks matched for Control4 device", NS);
+            return true;
+        }
+
         // Some devices, e.g. Xiaomi end devices have a different interview procedure, after pairing they
         // report it's modelID trough a readResponse. The readResponse is received by the controller and set
         // on the device.
